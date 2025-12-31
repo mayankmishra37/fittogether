@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile | FitTogether</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- ✅ TOAST ANIMATION (ADDED) -->
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast-animate {
+            animation: fadeInUp 0.35s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAVBAR -->
+<nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+
+        <div class="flex items-center gap-2 font-bold text-lg">
+            <div class="w-9 h-9 rounded-lg bg-green-500 text-white flex items-center justify-center">
+                F
+            </div>
+            FitTogether
+        </div>
+
+        <div class="flex items-center gap-6 text-sm text-gray-600">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="home" class="w-4 h-4"></i> Dashboard
+            </a>
+            <a href="{{ url_for('activity') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="activity" class="w-4 h-4"></i> Activity
+            </a>
+            <a href="{{ url_for('food') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="utensils" class="w-4 h-4"></i> Food
+            </a>
+            <a href="{{ url_for('growth') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="trending-up" class="w-4 h-4"></i> Growth
+            </a>
+            <a href="{{ url_for('profile') }}"
+               class="flex items-center gap-1 text-green-500 font-medium">
+                <i data-lucide="user" class="w-4 h-4"></i> Profile
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-1 hover:text-red-500">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<section class="max-w-4xl mx-auto px-6 py-10">
+
+    <!-- 🔥 PROFILE HEADER WITH STREAK -->
+    <div class="flex items-center gap-4 mb-6">
+        <h1 class="text-3xl font-bold">My Profile</h1>
+
+        <!-- 🔥 STREAK ICON -->
+        <div class="relative">
+            <button onclick="toggleStreakInfo()"
+                    class="flex items-center gap-1 bg-orange-100 text-orange-600
+                           px-3 py-1.5 rounded-full text-sm font-semibold hover:bg-orange-200">
+                🔥 {{ streak }} days
+            </button>
+
+            <div id="streakInfo"
+                 class="hidden absolute top-12 left-0 w-72 bg-white border
+                        rounded-xl shadow-lg p-4 text-sm z-20">
+                <h3 class="font-semibold mb-2">Current Streak</h3>
+                <p class="text-gray-500 mt-2 text-xs">
+                    Keep logging daily to maintain your streak.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE INFO -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-8">
+        <h2 class="font-semibold mb-4">Personal Information</h2>
+
+        <div class="flex items-center gap-6 mb-6">
+            <div class="relative w-20 h-20">
+                <img
+                    src="{{ url_for('static', filename='uploads/profiles/' + user.profile_image) }}"
+                    onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=22c55e&color=fff'"
+                    class="w-20 h-20 rounded-full object-cover border"
+                >
+
+                <form method="POST"
+                      action="{{ url_for('upload_profile_photo') }}"
+                      enctype="multipart/form-data">
+                    <label
+                        for="profile_photo"
+                        class="absolute bottom-0 right-0 bg-green-500 hover:bg-green-600
+                               p-1.5 rounded-full cursor-pointer shadow-md">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5 text-white"></i>
+                    </label>
+
+                    <input type="file" id="profile_photo" name="profile_photo"
+                           accept="image/*" class="hidden"
+                           onchange="this.form.submit()">
+                </form>
+            </div>
+
+            <div>
+                <p class="font-medium">{{ user.username }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div><p class="text-gray-500">Username</p><p class="font-medium">{{ user.username }}</p></div>
+            <div><p class="text-gray-500">Email</p><p class="font-medium">{{ user.email }}</p></div>
+            <div><p class="text-gray-500">Age</p><p class="font-medium">{{ profile.age }}</p></div>
+            <div><p class="text-gray-500">Weight</p><p class="font-medium">{{ profile.weight_kg }} kg</p></div>
+            <div><p class="text-gray-500">Height</p><p class="font-medium">{{ profile.height_cm }} cm</p></div>
+            <div><p class="text-gray-500">Goal</p><p class="font-medium capitalize">{{ profile.goal }}</p></div>
+        </div>
+    </div>
+
+    <!-- UPDATE PROFILE -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-8">
+        <h2 class="font-semibold mb-4">Update Profile</h2>
+        <form method="POST" action="{{ url_for('update_profile') }}" class="space-y-5">
+            <input type="text" name="username" value="{{ user.username }}"
+                   class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-400">
+            <input type="email" name="email" value="{{ user.email }}"
+                   class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-400">
+            <button type="submit"
+                class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold">
+                Save Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- CHANGE PASSWORD -->
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <h2 class="font-semibold mb-4">Change Password</h2>
+        <form method="POST" action="{{ url_for('change_password') }}" class="space-y-5">
+            <input type="password" name="current_password" required
+                   class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-400">
+            <input type="password" name="new_password" required
+                   class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-400">
+            <button type="submit"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold">
+                Update Password
+            </button>
+        </form>
+    </div>
+
+</section>
+
+<!-- ✅ PROFILE TOAST ALERT (ADDED) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div id="profileToast"
+           class="fixed bottom-6 right-6 z-50 w-80 bg-white
+                  rounded-2xl shadow-lg border p-5 toast-animate">
+        <h4 class="font-semibold
+            {% if category == 'success' %}text-green-600{% endif %}
+            {% if category == 'danger' %}text-red-600{% endif %}
+            {% if category == 'warning' %}text-yellow-600{% endif %}">
+            {{ category|capitalize }}
+        </h4>
+        <p class="text-gray-600 mt-1">{{ message }}</p>
+      </div>
+
+      <script>
+        setTimeout(() => {
+            const t = document.getElementById("profileToast");
+            if (t) {
+                t.style.opacity = "0";
+                setTimeout(() => t.remove(), 400);
+            }
+        }, 3000);
+      </script>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<script>
+function toggleStreakInfo() {
+    document.getElementById("streakInfo").classList.toggle("hidden");
+}
+lucide.createIcons();
+</script>
+
+</body>
+</html>

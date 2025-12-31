@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Fitness Plan | FitTogether</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800">
+
+<section class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="bg-white rounded-3xl shadow-lg p-8 w-full max-w-4xl">
+
+        <!-- HEADER -->
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1 rounded-full text-sm font-semibold mb-4">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                Personalized Plan
+            </div>
+
+            <h1 class="text-4xl font-extrabold mb-3">
+                Your <span class="text-green-500">Fitness Plan</span>
+            </h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Based on your profile, we’ve created a simple and realistic plan to help you
+                stay consistent and healthy.
+            </p>
+        </div>
+
+        <!-- GOAL CARD -->
+        <div class="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-2xl p-6 mb-10">
+            <h2 class="text-xl font-semibold flex items-center gap-2 mb-3">
+                <i data-lucide="target" class="w-5 h-5 text-green-600"></i>
+                Your Goal
+            </h2>
+
+            {% if profile.goal == 'lose' %}
+                <p class="text-gray-700">
+                    🎯 <strong>Lose Weight</strong><br>
+                    Focus on daily movement, controlled calories, and light cardio to burn fat safely.
+                </p>
+            {% elif profile.goal == 'gain' %}
+                <p class="text-gray-700">
+                    🎯 <strong>Gain Muscle</strong><br>
+                    Strength workouts and a higher calorie intake will support muscle growth.
+                </p>
+            {% else %}
+                <p class="text-gray-700">
+                    🎯 <strong>Maintain Fitness</strong><br>
+                    Balanced activity and nutrition to keep you healthy and consistent.
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- STATS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+
+            <!-- CALORIES -->
+            <div class="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                        <i data-lucide="utensils" class="w-5 h-5 text-orange-500"></i>
+                    </div>
+                    <h3 class="font-semibold">Daily Calorie Target</h3>
+                </div>
+
+                <p class="text-3xl font-bold text-gray-800">
+                    {{ profile.target_calories }} kcal
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Designed to match your fitness goal safely.
+                </p>
+            </div>
+
+            <!-- STEPS -->
+            <div class="bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i data-lucide="footprints" class="w-5 h-5 text-blue-500"></i>
+                    </div>
+                    <h3 class="font-semibold">Daily Activity Goal</h3>
+                </div>
+
+                <p class="text-3xl font-bold text-gray-800">
+                    {{ profile.target_steps }} steps
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Improves stamina, heart health, and energy.
+                </p>
+            </div>
+
+        </div>
+
+        <!-- EXERCISE TYPES -->
+        <div class="mb-12">
+            <h2 class="text-xl font-semibold mb-6 text-center">
+                Recommended Exercise Types
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                <div class="border rounded-2xl p-6 text-center hover:shadow-md transition">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 flex items-center justify-center">
+                        <i data-lucide="activity" class="w-6 h-6 text-green-600"></i>
+                    </div>
+                    <h4 class="font-semibold mb-1">Cardio</h4>
+                    <p class="text-sm text-gray-600">
+                        Walking, jogging, cycling to burn calories and improve endurance.
+                    </p>
+                </div>
+
+                <div class="border rounded-2xl p-6 text-center hover:shadow-md transition">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-purple-100 flex items-center justify-center">
+                        <i data-lucide="dumbbell" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <h4 class="font-semibold mb-1">Strength</h4>
+                    <p class="text-sm text-gray-600">
+                        Bodyweight or light weights to build muscle and metabolism.
+                    </p>
+                </div>
+
+                <div class="border rounded-2xl p-6 text-center hover:shadow-md transition">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+                        <i data-lucide="heart" class="w-6 h-6 text-red-600"></i>
+                    </div>
+                    <h4 class="font-semibold mb-1">Recovery</h4>
+                    <p class="text-sm text-gray-600">
+                        Stretching, rest, and sleep to avoid burnout and injuries.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- DISCLAIMER -->
+        <p class="text-xs text-gray-500 text-center mb-8">
+            ⚠️ This plan is for educational purposes only and not medical advice.
+        </p>
+
+        <!-- CTA -->
+        <div class="text-center">
+            <a href="{{ url_for('dashboard') }}"
+               class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600
+                      text-white px-8 py-3 rounded-xl font-semibold
+                      transition shadow-md hover:shadow-lg">
+                Go to Dashboard
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+    </div>
+</section>
+
+<script>
+    lucide.createIcons();
+</script>
+
+</body>
+</html>

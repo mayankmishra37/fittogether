@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Setup | FitTogether</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 font-sans text-gray-800">
+
+<section class="min-h-screen flex items-center justify-center px-4">
+    <div class="bg-white rounded-2xl shadow-md p-8 w-full max-w-lg hover:shadow-xl transition">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="text-sm text-green-500 font-semibold mb-1">
+                Step 1 of 1
+            </div>
+            <h1 class="text-3xl font-extrabold mb-2">
+                Quick Setup
+            </h1>
+            <p class="text-gray-600">
+                Help us personalize your fitness journey
+            </p>
+        </div>
+
+        <!-- Form -->
+        <form method="POST" class="space-y-5">
+
+            <!-- AGE -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Age</label>
+                <input type="number" name="age" required min="10" max="100"
+                       placeholder="Your age"
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300
+                              focus:ring-2 focus:ring-green-400 focus:outline-none">
+            </div>
+
+            <!-- HEIGHT -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Height (cm)</label>
+                <input type="number" id="height" name="height" required min="100" max="250"
+                       placeholder="e.g. 170"
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300
+                              focus:ring-2 focus:ring-green-400 focus:outline-none">
+            </div>
+
+            <!-- WEIGHT -->
+            <div>
+                <label class="block text-sm font-medium mb-1">Weight (kg)</label>
+                <input type="number" id="weight" name="weight" required min="30" max="250"
+                       placeholder="e.g. 65"
+                       class="w-full px-4 py-3 rounded-lg border border-gray-300
+                              focus:ring-2 focus:ring-green-400 focus:outline-none">
+            </div>
+
+            <!-- BMI PREVIEW -->
+            <div id="bmiBox"
+                 class="hidden rounded-xl border p-4 text-center transition">
+                <p class="text-sm text-gray-500 mb-1">📊 Your BMI</p>
+                <p id="bmiValue" class="text-2xl font-bold"></p>
+                <p id="bmiLabel" class="text-sm font-medium mt-1"></p>
+            </div>
+
+            <!-- GOAL -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Your Goal</label>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                    <label class="cursor-pointer">
+                        <input type="radio" name="goal" value="lose" required class="peer hidden">
+                        <div class="border rounded-xl p-4 text-center
+                                    peer-checked:border-green-500
+                                    peer-checked:bg-green-50">
+                            <i data-lucide="trending-down"
+                               class="w-6 h-6 mx-auto mb-2 text-green-500"></i>
+                            <p class="font-medium">Lose Weight</p>
+                        </div>
+                    </label>
+
+                    <label class="cursor-pointer">
+                        <input type="radio" name="goal" value="maintain" class="peer hidden">
+                        <div class="border rounded-xl p-4 text-center
+                                    peer-checked:border-green-500
+                                    peer-checked:bg-green-50">
+                            <i data-lucide="activity"
+                               class="w-6 h-6 mx-auto mb-2 text-green-500"></i>
+                            <p class="font-medium">Maintain</p>
+                        </div>
+                    </label>
+
+                    <label class="cursor-pointer">
+                        <input type="radio" name="goal" value="gain" class="peer hidden">
+                        <div class="border rounded-xl p-4 text-center
+                                    peer-checked:border-green-500
+                                    peer-checked:bg-green-50">
+                            <i data-lucide="trending-up"
+                               class="w-6 h-6 mx-auto mb-2 text-green-500"></i>
+                            <p class="font-medium">Gain Muscle</p>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- SUBMIT -->
+            <button type="submit"
+                    class="w-full bg-green-500 text-white py-3 rounded-lg
+                           font-semibold text-lg hover:bg-green-600
+                           transition shadow-md hover:shadow-lg">
+                Continue
+            </button>
+
+        </form>
+
+    </div>
+</section>
+
+<script>
+    lucide.createIcons();
+
+    const heightInput = document.getElementById("height");
+    const weightInput = document.getElementById("weight");
+    const bmiBox = document.getElementById("bmiBox");
+    const bmiValue = document.getElementById("bmiValue");
+    const bmiLabel = document.getElementById("bmiLabel");
+
+    function calculateBMI() {
+        const h = parseFloat(heightInput.value) / 100;
+        const w = parseFloat(weightInput.value);
+
+        if (!h || !w) {
+            bmiBox.classList.add("hidden");
+            return;
+        }
+
+        const bmi = (w / (h * h)).toFixed(1);
+        let label = "";
+        let color = "";
+
+        if (bmi < 18.5) {
+            label = "Underweight";
+            color = "text-blue-600";
+        } else if (bmi < 25) {
+            label = "Normal";
+            color = "text-green-600";
+        } else if (bmi < 30) {
+            label = "Overweight";
+            color = "text-yellow-600";
+        } else {
+            label = "Obese";
+            color = "text-red-600";
+        }
+
+        bmiValue.textContent = bmi;
+        bmiLabel.textContent = label;
+        bmiValue.className = "text-2xl font-bold " + color;
+        bmiLabel.className = "text-sm font-medium mt-1 " + color;
+
+        bmiBox.classList.remove("hidden");
+    }
+
+    heightInput.addEventListener("input", calculateBMI);
+    weightInput.addEventListener("input", calculateBMI);
+</script>
+
+</body>
+</html>

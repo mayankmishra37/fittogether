@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard | FitTogether</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAVBAR -->
+<nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+
+        <!-- LOGO (LEFT) -->
+        <div class="flex items-center gap-2 font-bold text-lg">
+            <div class="w-9 h-9 rounded-lg bg-green-500 text-white flex items-center justify-center">
+                F
+            </div>
+            FitTogether
+        </div>
+
+        <!-- NAV LINKS (RIGHT) -->
+        <div class="flex items-center gap-6 text-sm text-gray-600">
+
+            <a href="{{ url_for('dashboard') }}"
+               class="flex items-center gap-1 text-green-500 font-medium">
+                <i data-lucide="home" class="w-4 h-4"></i> Dashboard
+            </a>
+
+            <a href="{{ url_for('activity') }}"
+               class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="activity" class="w-4 h-4"></i> Activity
+            </a>
+
+            <a href="{{ url_for('food') }}"
+               class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="utensils" class="w-4 h-4"></i> Food
+            </a>
+
+            <a href="{{ url_for('growth') }}"
+               class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="trending-up" class="w-4 h-4"></i> Growth
+            </a>
+
+            <a href="{{ url_for('profile') }}"
+               class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="user" class="w-4 h-4"></i> Profile
+            </a>
+
+            <a href="{{ url_for('logout') }}"
+               class="flex items-center gap-1 hover:text-red-500">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+            </a>
+
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<section class="max-w-7xl mx-auto px-6 py-8">
+
+<div class="flex items-center gap-3 mb-1">
+    <h1 class="text-3xl font-bold">
+        Hello, {{ user.username }}!
+    </h1>
+
+    <!-- AI COACH ICON -->
+    <button onclick="openAICoach()"
+            class="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600
+                   text-white flex items-center justify-center shadow">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+    </button>
+
+    {% if alerts %}
+    <div class="relative" id="notifyWrapper">
+        <button onclick="toggleNotify()"
+            class="w-9 h-9 rounded-full bg-white border
+                   flex items-center justify-center hover:bg-gray-50">
+
+            <i data-lucide="bell" class="w-4 h-4"></i>
+
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white
+                         text-[10px] px-1.5 rounded-full">
+                {{ alerts|length }}
+            </span>
+        </button>
+
+        <div id="notifyDropdown"
+             class="hidden absolute left-0 top-11 w-80
+                    bg-white border rounded-xl shadow-lg
+                    p-4 z-50 notify-fade">
+
+            <h4 class="text-sm font-semibold text-red-600 mb-2">
+                ⚠️ Alerts
+            </h4>
+
+            <ul class="text-sm text-gray-700 space-y-1">
+                {% for alert in alerts %}
+                    <li>• {{ alert }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<p class="text-gray-500 mb-6">
+    Today’s fitness overview.
+</p>
+
+<!-- PLAN CARD -->
+<div class="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
+    <h2 class="text-lg font-semibold flex items-center gap-2 mb-2">
+        <i data-lucide="target" class="w-5 h-5 text-green-500"></i>
+        {{ profile.goal | capitalize }} Plan
+    </h2>
+    <p class="text-green-700">
+        Maintain {{ profile.target_steps }} steps daily and a balanced calorie intake.
+    </p>
+    <p class="text-xs text-green-600 mt-2">
+        Disclaimer: This plan is for educational purposes only.
+    </p>
+</div>
+
+<!-- STATS -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+        <p class="text-sm text-gray-500">Activity Duration</p>
+        <h3 class="text-2xl font-bold">{{ log.steps }} min</h3>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
+        <p class="text-sm text-gray-500">Calories Burned</p>
+        <h3 class="text-2xl font-bold">{{ calories_burned }}</h3>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+        <p class="text-sm text-gray-500">Calories Consumed</p>
+        <h3 class="text-2xl font-bold">{{ calories_consumed }}</h3>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+        <p class="text-sm text-gray-500">Current Goal</p>
+        <h3 class="text-xl font-bold uppercase">{{ profile.goal }}</h3>
+    </div>
+
+</div>
+
+<!-- CHART + ACTIVITY -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+
+<!-- PIE CHART -->
+<div class="bg-white rounded-xl shadow-sm p-6">
+    <h3 class="font-semibold mb-4">Calorie Balance</h3>
+
+    {% if calories_consumed > 0 or calories_burned > 0 %}
+        <div class="h-56">
+            <canvas id="calorieChart"></canvas>
+        </div>
+        <p class="text-sm text-gray-400 text-center mt-3">
+            Estimated values are used.
+        </p>
+    {% else %}
+        <div class="h-56 flex items-center justify-center text-gray-400">
+            No calorie data logged today
+        </div>
+    {% endif %}
+</div>
+
+<!-- 🔽 REPLACED: ACTIVITY LIST (NO AGGREGATION) -->
+<div class="bg-white rounded-xl shadow-sm p-6">
+    <h3 class="font-semibold mb-4">Today’s Activities</h3>
+
+    {% if activities %}
+        <div class="space-y-3">
+            {% for a in activities %}
+            <div class="flex items-center justify-between bg-gray-50 rounded-xl p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <i data-lucide="activity" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium">{{ a.type }}</p>
+                        <p class="text-sm text-gray-500">{{ a.duration }} min</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold">{{ a.calories }} cal</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-500">No activities logged yet.</p>
+    {% endif %}
+</div>
+<!-- 🔼 END -->
+
+</div>
+
+<style>
+.notify-fade {
+    animation: notifyFade 0.18s ease-out;
+}
+@keyframes notifyFade {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 🔽 ADDED: PREMIUM AI CHAT UI */
+.chat-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.4;
+}
+.chat-user {
+    background: #22c55e;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+.chat-ai {
+    background: white;
+    border: 1px solid #e5e7eb;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+/* 🔼 END */
+</style>
+
+</section>
+
+<!-- 🤖 AI COACH MODAL -->
+<div id="aiModal"
+     class="fixed inset-0 bg-black/40 hidden z-50 flex items-center justify-center">
+
+<div class="bg-white w-full h-full md:w-2/3 md:h-4/5
+            rounded-none md:rounded-2xl shadow-xl flex flex-col">
+
+<div class="flex justify-between items-center p-4 border-b">
+    <h2 class="font-semibold flex items-center gap-2">
+        <i data-lucide="bot" class="w-5 h-5 text-green-500"></i>
+        FitTogether AI Coach
+    </h2>
+    <button onclick="closeAICoach()">
+        <i data-lucide="x"></i>
+    </button>
+</div>
+
+<div id="aiChatBox"
+     class="flex-1 overflow-y-auto p-4 bg-gray-50 text-sm space-y-2">
+</div>
+
+<div class="p-4 border-t flex gap-2">
+    <input id="aiInput"
+           class="flex-1 border rounded-lg px-3 py-2 text-sm"
+           placeholder="Ask fitness related question...">
+    <button onclick="sendAIMessage()"
+            class="bg-green-500 hover:bg-green-600 text-white px-4 rounded-lg">
+        Ask
+    </button>
+</div>
+
+</div>
+</div>
+
+<!-- PIE CHART SCRIPT (UNCHANGED) -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const chartEl = document.getElementById("calorieChart");
+    if (!chartEl || typeof Chart === "undefined") return;
+
+    const caloriesConsumed = Number("{{ calories_consumed }}");
+    const caloriesBurned = Number("{{ calories_burned }}");
+
+    if (caloriesConsumed === 0 && caloriesBurned === 0) return;
+
+    new Chart(chartEl, {
+        type: "pie",
+        data: {
+            labels: ["Consumed", "Burned"],
+            datasets: [{
+                data: [
+                    caloriesConsumed || 0.1,
+                    caloriesBurned || 0.1
+                ],
+                backgroundColor: ["#3b82f6", "#f97316"],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: "bottom" },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.label}: ${ctx.raw} cal`
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<!-- 🔽 REPLACED: AI CHAT LOGIC (NO ROUTE CHANGE) -->
+<script>
+const CHAT_KEY = "fitTogetherAIChat_{{ user.id }}";
+
+function openAICoach() {
+    document.getElementById("aiModal").classList.remove("hidden");
+    loadChat();
+}
+
+function closeAICoach() {
+    document.getElementById("aiModal").classList.add("hidden");
+}
+
+function loadChat() {
+    const box = document.getElementById("aiChatBox");
+    box.innerHTML = "";
+    const history = JSON.parse(localStorage.getItem(CHAT_KEY)) || [];
+
+    if (history.length === 0) {
+        box.innerHTML = `<div class="chat-bubble chat-ai">
+            👋 Hi {{ user.username }}, ask me about fitness, food or workouts.
+        </div>`;
+        return;
+    }
+
+    history.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "chat-bubble " + (m.role === "You" ? "chat-user" : "chat-ai");
+        div.innerText = m.text;
+        box.appendChild(div);
+    });
+
+    box.scrollTop = box.scrollHeight;
+}
+
+function saveMessage(role, text) {
+    const history = JSON.parse(localStorage.getItem(CHAT_KEY)) || [];
+    history.push({ role, text });
+    localStorage.setItem(CHAT_KEY, JSON.stringify(history));
+}
+
+async function sendAIMessage() {
+    const input = document.getElementById("aiInput");
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = "";
+    saveMessage("You", msg);
+    loadChat();
+
+    try {
+        const res = await fetch(`/ai-coach?message=${encodeURIComponent(msg)}`);
+        const data = await res.json();
+
+        data.advice.forEach(line => saveMessage("AI", line));
+        loadChat();
+    } catch {
+        saveMessage("AI", "Something went wrong.");
+        loadChat();
+    }
+}
+
+/* ENTER KEY SUPPORT */
+document.getElementById("aiInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        sendAIMessage();
+    }
+});
+</script>
+<!-- 🔼 END -->
+
+<script>
+function toggleNotify() {
+    document.getElementById("notifyDropdown")?.classList.toggle("hidden");
+}
+
+document.addEventListener("click", function (e) {
+    const wrap = document.getElementById("notifyWrapper");
+    const drop = document.getElementById("notifyDropdown");
+    if (!wrap || !drop) return;
+    if (!wrap.contains(e.target)) drop.classList.add("hidden");
+});
+</script>
+<script>
+/* STEP 2 FIX: Clear AI chat on page load for safety */
+localStorage.removeItem("fitTogetherAIChat_{{ user.id }}");
+</script>
+
+<script>
+    lucide.createIcons();
+</script>
+
+</body>
+</html>

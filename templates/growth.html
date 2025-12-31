@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Growth | FitTogether</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+
+<!-- NAVBAR -->
+<nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2 font-bold text-lg">
+            <div class="w-9 h-9 rounded-lg bg-green-500 text-white flex items-center justify-center">
+                F
+            </div>
+            FitTogether
+        </div>
+
+        <div class="flex items-center gap-6 text-sm text-gray-600">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="home" class="w-4 h-4"></i> Dashboard
+            </a>
+            <a href="{{ url_for('activity') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="activity" class="w-4 h-4"></i> Activity
+            </a>
+            <a href="{{ url_for('food') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="utensils" class="w-4 h-4"></i> Food
+            </a>
+            <a href="{{ url_for('growth') }}" class="flex items-center gap-1 text-green-500 font-medium">
+                <i data-lucide="trending-up" class="w-4 h-4"></i> Growth
+            </a>
+            <a href="{{ url_for('profile') }}" class="flex items-center gap-1 hover:text-green-500">
+                <i data-lucide="user" class="w-4 h-4"></i> Profile
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-1 hover:text-red-500">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- MAIN -->
+<section class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- TITLE + CALENDAR ICON -->
+    <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-3xl font-bold">Growth Overview</h1>
+
+        <!-- Calendar Icon -->
+        <button onclick="openCalendar()"
+                class="w-9 h-9 rounded-full bg-white border
+                       flex items-center justify-center
+                       hover:bg-gray-100">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+        </button>
+
+        {% if selected_period %}
+        <a href="{{ url_for('growth') }}"
+           class="text-sm text-gray-500 hover:text-red-500 ml-2">
+            Clear
+        </a>
+        {% endif %}
+    </div>
+
+    <p class="text-gray-500 mb-6">
+        Track your calorie progress over time.
+    </p>
+
+    <!-- 🔒 Hidden Month Picker -->
+    <form id="calendarForm" method="GET">
+        <input
+            id="calendarInput"
+            type="month"
+            name="period"
+            value="{{ selected_period }}"
+            class="hidden"
+            onchange="this.form.submit()"
+        >
+    </form>
+
+    <!-- STATS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+            <p class="text-sm text-gray-500">Calories Consumed</p>
+            <h3 class="text-2xl font-bold">{{ calories_consumed }}</h3>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
+            <p class="text-sm text-gray-500">Calories Burned</p>
+            <h3 class="text-2xl font-bold">{{ calories_burned }}</h3>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+            <p class="text-sm text-gray-500">Net Calories</p>
+            <h3 class="text-2xl font-bold">
+                {{ calories_consumed - calories_burned }}
+            </h3>
+        </div>
+
+    </div>
+
+    <!-- CHART -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+        <h3 class="font-semibold mb-4">Calorie Breakdown</h3>
+
+        {% if calories_consumed > 0 or calories_burned > 0 %}
+            <div class="h-64">
+                <canvas id="growthChart"></canvas>
+            </div>
+        {% else %}
+            <div class="h-64 flex items-center justify-center text-gray-400">
+                No data available for selected period
+            </div>
+        {% endif %}
+    </div>
+
+</section>
+
+<!-- CHART SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const el = document.getElementById("growthChart");
+    if (!el || typeof Chart === "undefined") return;
+
+    const consumed = Number("{{ calories_consumed }}");
+    const burned = Number("{{ calories_burned }}");
+
+    if (consumed === 0 && burned === 0) return;
+
+    new Chart(el, {
+        type: "pie",
+        data: {
+            labels: ["Consumed", "Burned"],
+            datasets: [{
+                data: [consumed || 0.1, burned || 0.1],
+                backgroundColor: ["#3b82f6", "#f97316"],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: "bottom" },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.label}: ${ctx.raw} cal`
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<script>
+function openCalendar() {
+    document.getElementById("calendarInput").showPicker();
+}
+</script>
+
+<script>
+    lucide.createIcons();
+</script>
+
+</body>
+</html>
