@@ -4,3 +4,5 @@ flask_login
 werkzeug
 email_validator
 gunicorn
+psycopg2-binary
+
