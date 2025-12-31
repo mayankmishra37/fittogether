@@ -11,7 +11,9 @@ from sqlalchemy import or_
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+db_url = os.environ.get("DATABASE_URL")
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # PROFILE PHOTO CONFIG
