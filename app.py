@@ -4,20 +4,46 @@ from datetime import date, datetime, timedelta
 from functools import wraps
 from sqlalchemy import extract
 from werkzeug.utils import secure_filename
+from sqlalchemy import func
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from PIL import Image, UnidentifiedImageError
+from email_validator import validate_email, EmailNotValidError
 import os
-from sqlalchemy import or_
+import secrets
+import uuid
 
 # ---------------- APP SETUP ----------------
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev_secret_key")
+
+IS_PRODUCTION = os.environ.get("APP_ENV", "").lower() == "production" or os.environ.get("FLASK_ENV", "").lower() == "production"
+secret_key = os.environ.get("SECRET_KEY")
+if IS_PRODUCTION and not secret_key:
+    raise RuntimeError("SECRET_KEY must be configured in production.")
+app.config["SECRET_KEY"] = secret_key or secrets.token_hex(32)
 
 db_url = os.environ.get("DATABASE_URL")
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///database.db'
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config.update(
+    SESSION_COOKIE_SECURE=IS_PRODUCTION,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+    MAX_CONTENT_LENGTH=3 * 1024 * 1024,
+)
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+csrf = CSRFProtect(app)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://"),
+    default_limits=[],
+)
 
-# PROFILE PHOTO CONFIG
 UPLOAD_FOLDER = "static/uploads/profiles"
+ALLOWED_PROFILE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -169,6 +195,7 @@ def home():
 
 # ---------------- SIGNUP ----------------
 @app.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")
 def signup():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
@@ -184,11 +211,21 @@ def signup():
             flash("Passwords do not match", "danger")
             return redirect(url_for('signup'))
 
-        if len(password) < 6:
-            flash("Password must be at least 6 characters", "warning")
+        if len(username) < 3 or len(username) > 50:
+            flash("Username must be between 3 and 50 characters", "warning")
             return redirect(url_for('signup'))
 
-        if User.query.filter_by(username=username).first():
+        if len(password) < 12:
+            flash("Password must be at least 12 characters", "warning")
+            return redirect(url_for('signup'))
+
+        try:
+            email = validate_email(email, check_deliverability=False).normalized.lower()
+        except EmailNotValidError:
+            flash("Please enter a valid email address", "warning")
+            return redirect(url_for('signup'))
+
+        if db.session.query(User.id).filter(func.lower(User.username) == username.lower()).first():
             flash("Username already exists", "danger")
             return redirect(url_for('signup'))
 
@@ -202,7 +239,8 @@ def signup():
         db.session.add(user)
         db.session.commit()
 
-        # ✅ AUTO LOGIN
+        session.clear()
+        session.permanent = True
         session['user_id'] = user.id
         flash("Account created successfully! Complete your setup.", "success")
         return redirect(url_for('quiz'))
@@ -214,6 +252,7 @@ def signup():
 # ---------------- LOGIN ----------------
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
         identifier = request.form.get('email', '').strip()
@@ -233,6 +272,8 @@ def login():
             return redirect(url_for('login'))
 
         # ✅ LOGIN SUCCESS → DIRECT DASHBOARD
+        session.clear()
+        session.permanent = True
         session['user_id'] = user.id
         flash("Welcome back!", "success")
         return redirect(url_for('dashboard'))
@@ -423,22 +464,35 @@ def profile():
 @app.route('/upload-profile-photo', methods=['POST'])
 @login_required
 def upload_profile_photo():
-    file = request.files.get('profile_photo')
-
-    if not file or file.filename == "":
+    file = request.files.get("profile_photo")
+    if not file or not file.filename:
         flash("No file selected", "warning")
-        return redirect(url_for('profile'))
+        return redirect(url_for("profile"))
 
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    safe_name = secure_filename(file.filename)
+    extension = safe_name.rsplit(".", 1)[-1].lower() if "." in safe_name else ""
+    if extension not in ALLOWED_PROFILE_EXTENSIONS:
+        flash("Upload a JPG, JPEG, PNG, or WEBP image", "warning")
+        return redirect(url_for("profile"))
+
+    try:
+        file.stream.seek(0)
+        with Image.open(file.stream) as image:
+            image.verify()
+        file.stream.seek(0)
+    except (UnidentifiedImageError, OSError, ValueError):
+        flash("The uploaded file is not a valid image", "danger")
+        return redirect(url_for("profile"))
+
+    filename = f"{uuid.uuid4().hex}.{extension}"
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
     file.save(filepath)
 
-    user = User.query.get(session['user_id'])
+    user = User.query.get(session["user_id"])
     user.profile_image = filename
     db.session.commit()
-
     flash("Profile photo updated", "success")
-    return redirect(url_for('profile'))
+    return redirect(url_for("profile"))
 
 # ---------------- UPDATE PROFILE ----------------
 @app.route('/update-profile', methods=['POST'])
@@ -446,17 +500,33 @@ def upload_profile_photo():
 def update_profile():
     user = User.query.get(session['user_id'])
 
-    username = request.form.get('username', '').strip()
-    email = request.form.get('email', '').strip()
+    username = request.form.get("username", "").strip()
+    email = request.form.get("email", "").strip().lower()
 
     if not username or not email:
         flash("Username and email are required", "danger")
-        return redirect(url_for('profile'))
+        return redirect(url_for("profile"))
+    if len(username) < 3 or len(username) > 50:
+        flash("Username must be between 3 and 50 characters", "warning")
+        return redirect(url_for("profile"))
 
-    exists = User.query.filter(User.email == email, User.id != user.id).first()
-    if exists:
+    try:
+        email = validate_email(email, check_deliverability=False).normalized.lower()
+    except EmailNotValidError:
+        flash("Please enter a valid email address", "warning")
+        return redirect(url_for("profile"))
+
+    username_exists = User.query.filter(
+        func.lower(User.username) == username.lower(), User.id != user.id
+    ).first()
+    if username_exists:
+        flash("Username already exists", "danger")
+        return redirect(url_for("profile"))
+
+    email_exists = User.query.filter(User.email == email, User.id != user.id).first()
+    if email_exists:
         flash("Email already exists", "danger")
-        return redirect(url_for('profile'))
+        return redirect(url_for("profile"))
 
     user.username = username
     user.email = email
@@ -478,15 +548,15 @@ def change_password():
         flash("Current password is incorrect", "danger")
         return redirect(url_for('profile'))
 
-    if len(new) < 6:
-        flash("Password must be at least 6 characters", "warning")
-        return redirect(url_for('profile'))
+    if len(new) < 12:
+        flash("New password must be at least 12 characters", "warning")
+        return redirect(url_for("profile"))
 
     user.set_password(new)
     db.session.commit()
-
-    flash("Password updated successfully", "success")
-    return redirect(url_for('profile'))
+    session.clear()
+    flash("Password updated. Please sign in again.", "success")
+    return redirect(url_for("login"))
 
 # ---------------- GROWTH ----------------
 @app.route('/growth')
@@ -530,13 +600,12 @@ def growth():
     )
 
 # ---------------- LOGOUT ----------------
-@app.route('/logout')
+@app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     session.clear()
-    return redirect(url_for('home'))
     flash("Logged out successfully", "success")
-    return redirect(url_for('home'))            
+    return redirect(url_for("home"))            
 
 
 if __name__ == "__main__":
