@@ -17,7 +17,12 @@ import uuid
 # ---------------- APP SETUP ----------------
 app = Flask(__name__)
 
-IS_PRODUCTION = os.environ.get("APP_ENV", "").lower() == "production" or os.environ.get("FLASK_ENV", "").lower() == "production"
+IS_PRODUCTION = (
+    os.environ.get("APP_ENV", "").lower() == "production"
+    or os.environ.get("FLASK_ENV", "").lower() == "production"
+    or "RENDER" in os.environ
+    or "RAILWAY_ENVIRONMENT" in os.environ
+)
 secret_key = os.environ.get("SECRET_KEY")
 if IS_PRODUCTION and not secret_key:
     raise RuntimeError("SECRET_KEY must be configured in production.")
@@ -478,9 +483,20 @@ def upload_profile_photo():
     try:
         file.stream.seek(0)
         with Image.open(file.stream) as image:
+            image_format = (image.format or "").upper()
+            expected_formats = {
+                "jpg": {"JPEG"},
+                "jpeg": {"JPEG"},
+                "png": {"PNG"},
+                "webp": {"WEBP"},
+            }
+            if image_format not in expected_formats[extension]:
+                raise ValueError("Image format does not match its extension")
+            if image.width * image.height > 20_000_000:
+                raise ValueError("Image dimensions are too large")
             image.verify()
         file.stream.seek(0)
-    except (UnidentifiedImageError, OSError, ValueError):
+    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         flash("The uploaded file is not a valid image", "danger")
         return redirect(url_for("profile"))
 
