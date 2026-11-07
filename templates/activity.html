@@ -50,9 +50,10 @@
             <a href="{{ url_for('profile') }}" class="flex items-center gap-1 hover:text-green-500">
                 <i data-lucide="user" class="w-4 h-4"></i> Profile
             </a>
-            <a href="{{ url_for('logout') }}" class="flex items-center gap-1 hover:text-red-500">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Log Out
-            </a>
+            <form method="POST" action="{{ url_for('logout') }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="flex items-center gap-1 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i> Log Out</button>
+            </form>
         </div>
     </div>
 </nav>
@@ -70,6 +71,7 @@
     <div class="bg-white rounded-3xl shadow-sm border p-10">
 
         <form method="POST" class="space-y-8">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- ACTIVITY TYPE -->
             <div>
