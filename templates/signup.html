@@ -28,6 +28,7 @@
 
         <!-- Signup Form -->
         <form method="POST" class="space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <!-- Username -->
             <div>
