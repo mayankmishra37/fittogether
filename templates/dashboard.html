@@ -57,10 +57,10 @@
                 <i data-lucide="user" class="w-4 h-4"></i> Profile
             </a>
 
-            <a href="{{ url_for('logout') }}"
-               class="flex items-center gap-1 hover:text-red-500">
-                <i data-lucide="log-out" class="w-4 h-4"></i> Logout
-            </a>
+            <form method="POST" action="{{ url_for('logout') }}" class="inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="flex items-center gap-1 hover:text-red-500"><i data-lucide="log-out" class="w-4 h-4"></i> Logout</button>
+            </form>
 
         </div>
     </div>
